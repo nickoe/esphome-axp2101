@@ -1,128 +1,92 @@
-#ifndef __AXP2101_H__
-#define __AXP2101_H__
+#pragma once
 
-#include "esphome/components/binary_sensor/binary_sensor.h"
-#include "esphome/components/i2c/i2c.h"
-#include "esphome/components/sensor/sensor.h"
 #include "esphome/core/component.h"
-
-#define XPOWERS_CHIP_AXP2101
-#include "XPowersLib.h"
+#include "esphome/components/i2c/i2c.h"
 
 namespace esphome {
 namespace axp2101 {
 
-enum AXP2101Model {
-  AXP2101_M5CORE2,
-};
-
-#define SLEEP_MSEC(us) (((uint64_t)us) * 1000L)
-#define SLEEP_SEC(us)  (((uint64_t)us) * 1000000L)
-#define SLEEP_MIN(us)  (((uint64_t)us) * 60L * 1000000L)
-#define SLEEP_HR(us)   (((uint64_t)us) * 60L * 60L * 1000000L)
-
-#define CURRENT_100MA  (0b0000)
-#define CURRENT_190MA  (0b0001)
-#define CURRENT_280MA  (0b0010)
-#define CURRENT_360MA  (0b0011)
-#define CURRENT_450MA  (0b0100)
-#define CURRENT_550MA  (0b0101)
-#define CURRENT_630MA  (0b0110)
-#define CURRENT_700MA  (0b0111)
-
-class AXP2101Component : public PollingComponent, public i2c::I2CDevice {
-public:
-  void set_batteryvoltage_sensor(sensor::Sensor *batteryvoltage_sensor) { batteryvoltage_sensor_ = batteryvoltage_sensor; }
-  void set_batterylevel_sensor(sensor::Sensor *batterylevel_sensor) { batterylevel_sensor_ = batterylevel_sensor; }
-  void set_batterycharging_bsensor(binary_sensor::BinarySensor *batterycharging_bsensor) { batterycharging_bsensor_ = batterycharging_bsensor; }
-  void set_brightness(float brightness) { brightness_ = brightness; }
-  void set_model(AXP2101Model model) { this->model_ = model; }
-
-  // ========== INTERNAL METHODS ==========
-  // (In most use cases you won't need these)
+class AXP2101Component : public Component, public i2c::I2CDevice {
+ public:
   void setup() override;
   void dump_config() override;
-  float get_setup_priority() const override;
-  void update() override;
 
-private:
-    static std::string GetStartupReason();
+  void set_dc3_enable(bool enable) { this->dc3_enable_ = enable; }
+  void set_dc3_voltage_mv(uint16_t mv) { this->dc3_voltage_mv_ = mv; this->dc3_voltage_set_ = true; }
 
-protected:
-    sensor::Sensor *batteryvoltage_sensor_;
-    sensor::Sensor *batterylevel_sensor_;
-    binary_sensor::BinarySensor *batterycharging_bsensor_;
-    float brightness_{1.0f};
-    float curr_brightness_{-1.0f};
-    AXP2101Model model_;
+  void set_aldo1_enable(bool enable) { this->aldo1_enable_ = enable; }
+  void set_aldo1_voltage_mv(uint16_t mv) { this->aldo1_voltage_mv_ = mv; this->aldo1_voltage_set_ = true; }
 
-    /** M5Stack Core2 Values
-     * LDO2: ILI9342C PWR (Display)
-     * LD03: Vibration Motor
-     */
+  void set_aldo2_enable(bool enable) { this->aldo2_enable_ = enable; }
+  void set_aldo2_voltage_mv(uint16_t mv) { this->aldo2_voltage_mv_ = mv; this->aldo2_voltage_set_ = true; }
 
-    void  UpdateBrightness();
-    bool  GetBatState();
-    uint8_t  GetBatData();
+  void set_aldo3_enable(bool enable) { this->aldo3_enable_ = enable; this->aldo3_present_ = true; }
+  void set_aldo3_voltage_mv(uint16_t mv) { this->aldo3_voltage_mv_ = mv; this->aldo3_voltage_set_ = true; this->aldo3_present_ = true; }
 
-    void  EnableCoulombcounter(void);
-    void  DisableCoulombcounter(void);
-    void  StopCoulombcounter(void);
-    void  ClearCoulombcounter(void);
-    uint32_t GetCoulombchargeData(void);
-    uint32_t GetCoulombdischargeData(void);
-    float GetCoulombData(void);
+  void set_aldo4_enable(bool enable) { this->aldo4_enable_ = enable; }
+  void set_aldo4_voltage_mv(uint16_t mv) { this->aldo4_voltage_mv_ = mv; this->aldo4_voltage_set_ = true; }
 
-    uint16_t GetVbatData(void) __attribute__((deprecated));
-    uint16_t GetIchargeData(void) __attribute__((deprecated));
-    uint16_t GetIdischargeData(void) __attribute__((deprecated));
-    uint16_t GetTempData(void) __attribute__((deprecated));
-    uint32_t GetPowerbatData(void) __attribute__((deprecated));
-    uint16_t GetVinData(void) __attribute__((deprecated));
-    uint16_t GetIinData(void) __attribute__((deprecated));
-    uint16_t GetVusbinData(void) __attribute__((deprecated));
-    uint16_t GetIusbinData(void) __attribute__((deprecated));
-    uint16_t GetVapsData(void) __attribute__((deprecated));
-    uint8_t GetBtnPress(void);
+  void set_bldo1_enable(bool enable) { this->bldo1_enable_ = enable; this->bldo1_present_ = true; }
+  void set_bldo1_voltage_mv(uint16_t mv) { this->bldo1_voltage_mv_ = mv; this->bldo1_voltage_set_ = true; this->bldo1_present_ = true; }
 
-      // -- sleep
-    void SetSleep(void);
-    void DeepSleep(uint64_t time_in_us = 0);
-    void LightSleep(uint64_t time_in_us = 0);
+ protected:
+  // Only touch rails when *_enable is true (safer default)
+  bool dc3_enable_{false};
+  bool aldo1_enable_{false};
+  bool aldo2_enable_{false};
+  bool aldo3_enable_{false};
+  bool aldo4_enable_{false};
+  bool bldo1_enable_{false};
 
-    // void SetChargeVoltage( uint8_t );
-    void  SetChargeCurrent( uint8_t );
-    float GetBatCurrent();
-    float GetVinVoltage();
-    float GetVinCurrent();
-    float GetVBusVoltage();
-    float GetVBusCurrent();
-    float GetTempInAXP2101();
-    float GetBatPower();
-    float GetBatChargeCurrent();
-    float GetAPSVoltage();
-    float GetBatCoulombInput();
-    float GetBatCoulombOut();
-    uint8_t GetWarningLevel(void);
-    void SetCoulombClear();
-    void SetLDO2( bool State );
-    void SetLDO3( bool State );
-    void SetAdcState(bool State);
+  bool aldo3_present_{false};
+  bool bldo1_present_{false};
 
-    void PowerOff();
+  uint16_t dc3_voltage_mv_{0};
+  uint16_t aldo1_voltage_mv_{0};
+  uint16_t aldo2_voltage_mv_{0};
+  uint16_t aldo3_voltage_mv_{0};
+  uint16_t aldo4_voltage_mv_{0};
+  uint16_t bldo1_voltage_mv_{0};
 
+  bool dc3_voltage_set_{false};
+  bool aldo1_voltage_set_{false};
+  bool aldo2_voltage_set_{false};
+  bool aldo3_voltage_set_{false};
+  bool aldo4_voltage_set_{false};
+  bool bldo1_voltage_set_{false};
 
-    void Write1Byte( uint8_t Addr ,  uint8_t Data );
-    uint8_t Read8bit( uint8_t Addr );
-    uint16_t Read12Bit( uint8_t Addr);
-    uint16_t Read13Bit( uint8_t Addr);
-    uint16_t Read16bit( uint8_t Addr );
-    uint32_t Read24bit( uint8_t Addr );
-    uint32_t Read32bit( uint8_t Addr );
-    void ReadBuff( uint8_t Addr , uint8_t Size , uint8_t *Buff );
+  // Register helpers
+  bool read_u8_(uint8_t reg, uint8_t &value);
+  bool write_u8_(uint8_t reg, uint8_t value);
+  bool update_bits_(uint8_t reg, uint8_t mask, bool set);
+
+  // Rail helpers
+  bool set_dc3_voltage_reg_(uint16_t mv);
+  bool set_ldo_voltage_reg_(uint8_t reg, uint16_t mv);
+
+  void apply_dc3_();
+  void apply_ldo_(bool enable, uint8_t enable_bit, bool voltage_set, uint16_t mv, uint8_t volt_reg);
+
+  // Registers (from lewisxhe/XPowersLib @ e087e81657e7dd3ec35dac30f84115724e8b81ad)
+  static constexpr uint8_t REG_DC_ONOFF_DVM_CTRL = 0x80;
+  static constexpr uint8_t REG_DC_VOL2_CTRL = 0x84;
+
+  static constexpr uint8_t REG_LDO_ONOFF_CTRL0 = 0x90;
+  static constexpr uint8_t REG_LDO_VOL0_CTRL = 0x92;  // ALDO1
+  static constexpr uint8_t REG_LDO_VOL1_CTRL = 0x93;  // ALDO2
+  static constexpr uint8_t REG_LDO_VOL2_CTRL = 0x94;  // ALDO3
+  static constexpr uint8_t REG_LDO_VOL3_CTRL = 0x95;  // ALDO4
+  static constexpr uint8_t REG_LDO_VOL4_CTRL = 0x96;  // BLDO1
+
+  // Enable bits
+  static constexpr uint8_t BIT_DC3_EN = 1 << 2;  // in REG_DC_ONOFF_DVM_CTRL
+
+  static constexpr uint8_t BIT_ALDO1_EN = 1 << 0;  // in REG_LDO_ONOFF_CTRL0
+  static constexpr uint8_t BIT_ALDO2_EN = 1 << 1;
+  static constexpr uint8_t BIT_ALDO3_EN = 1 << 2;
+  static constexpr uint8_t BIT_ALDO4_EN = 1 << 3;
+  static constexpr uint8_t BIT_BLDO1_EN = 1 << 4;
 };
 
-}
-}
-
-#endif
+}  // namespace axp2101
+}  // namespace esphome
